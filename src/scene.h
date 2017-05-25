@@ -15,9 +15,11 @@ struct sphere;
 struct camera;
 struct matrixTransform;
 struct poly;
+struct kdTreeNode;
 
 //World
 struct scene {
+	
 	struct color *ambientColor;
 	
 	struct crayOBJ *objs;
@@ -39,11 +41,6 @@ struct scene {
 	struct matrixTransform *camTransforms;
 	int camTransformCount;
 	
-	//FIXME: TEMPORARY
-	struct poly *customPolys;
-	int customPolyCount;
-	
 };
 
 int testBuild(struct scene *scene, char *inputFileName);
-struct scene *newScene();

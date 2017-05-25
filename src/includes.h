@@ -19,7 +19,7 @@
 //Some macros
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 #define max(a,b) (((a) > (b)) ? (a) : (b))
-#define invsqrtf(x) (1.0f / sqrtf(x))
+#define invsqrt(x) (1.0 / sqrt(x))
 
 //Master include file
 #include <stdlib.h>
@@ -58,7 +58,17 @@
 #define OBJ_FILENAME_LENGTH 500
 
 #include "color.h"
+#include "material.h"
 #include "vector.h"
 #include "list.h"
 #include "sphere.h"
 #include "transforms.h"
+#include "lightRay.h"
+
+enum fileMode {
+	loadModeNormal,//Load scene def normally
+	loadModeTarga, //Load previous render state
+	saveModeNormal,//Save image
+	saveModeTarga, //Save current render state
+	saveModeNone   //Don't save
+};

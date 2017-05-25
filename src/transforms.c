@@ -17,17 +17,6 @@ double toRadians(double degrees) {
 	return (degrees * PI) / 180;
 }
 
-void addTransform(struct crayOBJ *obj, struct matrixTransform transform) {
-	if (obj->transformCount == 0) {
-		obj->transforms = (struct matrixTransform*)calloc(1, sizeof(struct matrixTransform));
-	} else {
-		obj->transforms = (struct matrixTransform*)realloc(obj->transforms, (obj->transformCount + 1) * sizeof(struct matrixTransform));
-	}
-	
-	obj->transforms[obj->transformCount] = transform;
-	obj->transformCount++;
-}
-
 struct matrixTransform emptyTransform() {
 	struct matrixTransform transform;
 	transform.type = transformTypeNone;
@@ -52,23 +41,6 @@ void transformVector(struct vector *vec, struct matrixTransform *tf) {
 	}
 }
 
-void transformMesh(struct crayOBJ *object) {
-	for (int tf = 0; tf < object->transformCount; tf++) {
-		//Perform transforms
-		for (int p = object->firstPolyIndex; p < (object->firstPolyIndex + object->polyCount); p++) {
-			for (int v = 0; v < polygonArray[p].vertexCount; v++) {
-				transformVector(&vertexArray[polygonArray[p].vertexIndex[v]], &object->transforms[tf]);
-			}
-		}
-		//Clear isTransformed flags
-		for (int p = object->firstPolyIndex; p < object->firstPolyIndex + object->polyCount; p++) {
-			for (int v = 0; v < polygonArray->vertexCount; v++) {
-				vertexArray[polygonArray[p].vertexIndex[v]].isTransformed = false;
-			}
-		}
-	}
-}
-
 struct sphere transformSphere(struct sphere inputSphere, struct matrixTransform transform) {
 	//TODO
 	return inputSphere;
@@ -79,7 +51,7 @@ struct light transformLight(struct light inputLight, struct matrixTransform tf) 
 	return inputLight;
 }
 
-struct matrixTransform newTransformRotateX(float degrees) {
+struct matrixTransform newTransformRotateX(double degrees) {
 	struct matrixTransform transform = emptyTransform();
 	transform.type = transformTypeXRotate;
 	transform.a = 1;
@@ -91,7 +63,7 @@ struct matrixTransform newTransformRotateX(float degrees) {
 	return transform;
 }
 
-struct matrixTransform newTransformRotateY(float degrees) {
+struct matrixTransform newTransformRotateY(double degrees) {
 	struct matrixTransform transform = emptyTransform();
 	transform.type = transformTypeYRotate;
 	transform.a = cos(toRadians(degrees));
@@ -103,7 +75,7 @@ struct matrixTransform newTransformRotateY(float degrees) {
 	return transform;
 }
 
-struct matrixTransform newTransformRotateZ(float degrees) {
+struct matrixTransform newTransformRotateZ(double degrees) {
 	struct matrixTransform transform = emptyTransform();
 	transform.type = transformTypeZRotate;
 	transform.a = cos(toRadians(degrees));

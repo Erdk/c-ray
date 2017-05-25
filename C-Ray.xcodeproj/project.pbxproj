@@ -24,6 +24,12 @@
 		9021F8FF1E47EE0A001737C0 /* vector.c in Sources */ = {isa = PBXBuildFile; fileRef = 9021F8FD1E47EE0A001737C0 /* vector.c */; };
 		9021F9031E480390001737C0 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9021F9011E480390001737C0 /* main.c */; };
 		9021F9091E494E3D001737C0 /* transforms.c in Sources */ = {isa = PBXBuildFile; fileRef = 9021F9071E494E3D001737C0 /* transforms.c */; };
+		907E63081ED0DD1D0096563A /* material.c in Sources */ = {isa = PBXBuildFile; fileRef = 907E63061ED0DD1D0096563A /* material.c */; };
+		90B988EB1EB33774000E22CF /* kdtree.c in Sources */ = {isa = PBXBuildFile; fileRef = 90B988E91EB33774000E22CF /* kdtree.c */; };
+		90B988EE1EB33DAB000E22CF /* bbox.c in Sources */ = {isa = PBXBuildFile; fileRef = 90B988EC1EB33DAB000E22CF /* bbox.c */; };
+		90BBA5351EB18D43001AE07B /* raytrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 90BBA5331EB18D43001AE07B /* raytrace.c */; };
+		90BBA5381EB18FAB001AE07B /* obj.c in Sources */ = {isa = PBXBuildFile; fileRef = 90BBA5361EB18FAB001AE07B /* obj.c */; };
+		90F843931ECE3FF700C5567C /* lightRay.c in Sources */ = {isa = PBXBuildFile; fileRef = 90F843911ECE3FF700C5567C /* lightRay.c */; };
 		90FDF8B81E593E9200EE91FD /* renderer.c in Sources */ = {isa = PBXBuildFile; fileRef = 90FDF8B61E593E9200EE91FD /* renderer.c */; };
 /* End PBXBuildFile section */
 
@@ -76,7 +82,19 @@
 		9021F9021E480390001737C0 /* main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = main.h; path = src/main.h; sourceTree = SOURCE_ROOT; };
 		9021F9071E494E3D001737C0 /* transforms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = transforms.c; path = src/transforms.c; sourceTree = SOURCE_ROOT; };
 		9021F9081E494E3D001737C0 /* transforms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = transforms.h; path = src/transforms.h; sourceTree = SOURCE_ROOT; };
+		907E63061ED0DD1D0096563A /* material.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = material.c; path = src/material.c; sourceTree = SOURCE_ROOT; };
+		907E63071ED0DD1D0096563A /* material.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = material.h; path = src/material.h; sourceTree = SOURCE_ROOT; };
+		90B988E91EB33774000E22CF /* kdtree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = kdtree.c; path = src/kdtree.c; sourceTree = SOURCE_ROOT; };
+		90B988EA1EB33774000E22CF /* kdtree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kdtree.h; path = src/kdtree.h; sourceTree = SOURCE_ROOT; };
+		90B988EC1EB33DAB000E22CF /* bbox.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bbox.c; path = src/bbox.c; sourceTree = SOURCE_ROOT; };
+		90B988ED1EB33DAB000E22CF /* bbox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bbox.h; path = src/bbox.h; sourceTree = SOURCE_ROOT; };
+		90BBA5331EB18D43001AE07B /* raytrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = raytrace.c; path = src/raytrace.c; sourceTree = SOURCE_ROOT; };
+		90BBA5341EB18D43001AE07B /* raytrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = raytrace.h; path = src/raytrace.h; sourceTree = SOURCE_ROOT; };
+		90BBA5361EB18FAB001AE07B /* obj.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = obj.c; path = src/obj.c; sourceTree = SOURCE_ROOT; };
+		90BBA5371EB18FAB001AE07B /* obj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = obj.h; path = src/obj.h; sourceTree = SOURCE_ROOT; };
 		90D99AF41D08ADB10015A854 /* C-Ray */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "C-Ray"; sourceTree = BUILT_PRODUCTS_DIR; };
+		90F843911ECE3FF700C5567C /* lightRay.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lightRay.c; path = src/lightRay.c; sourceTree = SOURCE_ROOT; };
+		90F843921ECE3FF700C5567C /* lightRay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lightRay.h; path = src/lightRay.h; sourceTree = SOURCE_ROOT; };
 		90FDF8B61E593E9200EE91FD /* renderer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = renderer.c; path = src/renderer.c; sourceTree = SOURCE_ROOT; };
 		90FDF8B71E593E9200EE91FD /* renderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = renderer.h; path = src/renderer.h; sourceTree = SOURCE_ROOT; };
 		90FDF8EE1E59858600EE91FD /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../../../System/Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
@@ -127,6 +145,8 @@
 			children = (
 				90FDF8B61E593E9200EE91FD /* renderer.c */,
 				90FDF8B71E593E9200EE91FD /* renderer.h */,
+				90BBA5331EB18D43001AE07B /* raytrace.c */,
+				90BBA5341EB18D43001AE07B /* raytrace.h */,
 				9021F9011E480390001737C0 /* main.c */,
 				9021F9021E480390001737C0 /* main.h */,
 				9021F8F61E47EE02001737C0 /* scene.c */,
@@ -139,6 +159,8 @@
 				9021F8DA1E47EDEE001737C0 /* camera.h */,
 				9021F8DB1E47EDEE001737C0 /* color.c */,
 				9021F8DC1E47EDEE001737C0 /* color.h */,
+				907E63061ED0DD1D0096563A /* material.c */,
+				907E63071ED0DD1D0096563A /* material.h */,
 				9021F8E11E47EDEE001737C0 /* errorhandler.c */,
 				9021F8E21E47EDEE001737C0 /* errorhandler.h */,
 				9021F8E31E47EDEE001737C0 /* filehandler.c */,
@@ -152,6 +174,14 @@
 				9021F8F91E47EE02001737C0 /* sphere.h */,
 				9021F8FD1E47EE0A001737C0 /* vector.c */,
 				9021F8FE1E47EE0A001737C0 /* vector.h */,
+				90BBA5361EB18FAB001AE07B /* obj.c */,
+				90BBA5371EB18FAB001AE07B /* obj.h */,
+				90B988E91EB33774000E22CF /* kdtree.c */,
+				90B988EA1EB33774000E22CF /* kdtree.h */,
+				90B988EC1EB33DAB000E22CF /* bbox.c */,
+				90B988ED1EB33DAB000E22CF /* bbox.h */,
+				90F843911ECE3FF700C5567C /* lightRay.c */,
+				90F843921ECE3FF700C5567C /* lightRay.h */,
 			);
 			name = src;
 			path = "C-Ray";
@@ -207,7 +237,7 @@
 		90D99AEC1D08ADB10015A854 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0720;
+				LastUpgradeCheck = 0830;
 				ORGANIZATIONNAME = "Valtteri Koskivuori";
 				TargetAttributes = {
 					90D99AF31D08ADB10015A854 = {
@@ -241,19 +271,25 @@
 				9021F8FC1E47EE02001737C0 /* sphere.c in Sources */,
 				9021F9091E494E3D001737C0 /* transforms.c in Sources */,
 				90FDF8B81E593E9200EE91FD /* renderer.c in Sources */,
+				90B988EB1EB33774000E22CF /* kdtree.c in Sources */,
 				9021F8FA1E47EE02001737C0 /* poly.c in Sources */,
 				9021F8FF1E47EE0A001737C0 /* vector.c in Sources */,
+				90BBA5351EB18D43001AE07B /* raytrace.c in Sources */,
 				9021F8E81E47EDEE001737C0 /* camera.c in Sources */,
 				9021F8FB1E47EE02001737C0 /* scene.c in Sources */,
 				9021F9031E480390001737C0 /* main.c in Sources */,
+				907E63081ED0DD1D0096563A /* material.c in Sources */,
 				9021F8EC1E47EDEE001737C0 /* errorhandler.c in Sources */,
 				9021F8D81E47EDD1001737C0 /* obj_parser.c in Sources */,
 				9021F8D11E47EDB8001737C0 /* list.c in Sources */,
+				90BBA5381EB18FAB001AE07B /* obj.c in Sources */,
 				9021F8E91E47EDEE001737C0 /* color.c in Sources */,
 				9021F8D21E47EDB8001737C0 /* lodepng.c in Sources */,
 				9021F8ED1E47EDEE001737C0 /* filehandler.c in Sources */,
 				9021F8EE1E47EDEE001737C0 /* light.c in Sources */,
+				90B988EE1EB33DAB000E22CF /* bbox.c in Sources */,
 				9021F8D51E47EDC6001737C0 /* string_extra.c in Sources */,
+				90F843931ECE3FF700C5567C /* lightRay.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,8 +309,10 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
@@ -285,7 +323,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -316,8 +354,10 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
@@ -327,6 +367,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -342,26 +383,52 @@
 		90D99AFC1D08ADB10015A854 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
+				CLANG_WARN_ASSIGN_ENUM = NO;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(USER_LIBRARY_DIR)/Frameworks",
 				);
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_PEDANTIC = NO;
+				GCC_WARN_SHADOW = NO;
+				GCC_WARN_UNUSED_PARAMETER = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				RUN_CLANG_STATIC_ANALYZER = NO;
 			};
 			name = Debug;
 		};
 		90D99AFD1D08ADB10015A854 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER = YES;
+				CLANG_WARN_ASSIGN_ENUM = NO;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(USER_LIBRARY_DIR)/Frameworks",
 				);
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_PEDANTIC = NO;
+				GCC_WARN_SHADOW = NO;
+				GCC_WARN_UNUSED_PARAMETER = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				RUN_CLANG_STATIC_ANALYZER = NO;
 			};
 			name = Release;
 		};

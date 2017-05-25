@@ -13,6 +13,7 @@
 #include "light.h"
 #include "poly.h"
 #include "scene.h"
+#include "raytrace.h"
 
 /*
  * Global renderer
@@ -22,14 +23,8 @@ struct renderer mainRenderer;
 #ifdef WINDOWS
 HANDLE tileMutex = INVALID_HANDLE_VALUE;
 #else
-pthread_mutex_t tileMutex;
+pthread_mutex_t tileMutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
-
-#pragma mark Helper funcs
-
-bool renderTilesEmpty() {
-	return mainRenderer.renderedTileCount >= mainRenderer.tileCount;
-}
 
 /**
  Gets the next tile from renderTiles in mainRenderer
@@ -37,16 +32,20 @@ bool renderTilesEmpty() {
  @return A renderTile to be rendered
  */
 struct renderTile getTile() {
+	struct renderTile tile;
+	memset(&tile, 0, sizeof(tile));
+	tile.tileNum = -1;
 #ifdef WINDOWS
 	WaitForSingleObject(tileMutex, INFINITE);
 #else
 	pthread_mutex_lock(&tileMutex);
 #endif
-	//FIXME: This could be optimized
-	struct renderTile tile = mainRenderer.renderTiles[mainRenderer.renderedTileCount++];
-	mainRenderer.renderTiles[mainRenderer.renderedTileCount - 1].isRendering = true;
-	tile.tileNum = mainRenderer.renderedTileCount - 1;
-	
+	if (mainRenderer.renderedTileCount < mainRenderer.tileCount) {
+		tile = mainRenderer.renderTiles[mainRenderer.renderedTileCount];
+		mainRenderer.renderTiles[mainRenderer.renderedTileCount].isRendering = true;
+		tile.tileNum = mainRenderer.renderedTileCount;
+		mainRenderer.renderedTileCount++;
+	}
 #ifdef WINDOWS
 	ReleaseMutex(tileMutex);
 #else
@@ -69,8 +68,8 @@ void quantizeImage(struct scene *worldScene) {
 	int tilesX = worldScene->camera->width / worldScene->camera->tileWidth;
 	int tilesY = worldScene->camera->height / worldScene->camera->tileHeight;
 	
-	float tilesXf = (float)worldScene->camera->width / (float)worldScene->camera->tileWidth;
-	float tilesYf = (float)worldScene->camera->height / (float)worldScene->camera->tileHeight;
+	double tilesXf = (double)worldScene->camera->width / (double)worldScene->camera->tileWidth;
+	double tilesYf = (double)worldScene->camera->height / (double)worldScene->camera->tileHeight;
 	
 	if (tilesXf - (int)tilesXf != 0) {
 		tilesX++;
@@ -106,6 +105,10 @@ void quantizeImage(struct scene *worldScene) {
 	printf("Quantized image into %i tiles. (%ix%i)", (tilesX*tilesY), tilesX, tilesY);
 }
 
+
+/**
+ Reorder renderTiles to start from top
+ */
 void reorderTopToBottom() {
 	int endIndex = mainRenderer.tileCount - 1;
 	
@@ -119,6 +122,10 @@ void reorderTopToBottom() {
 	mainRenderer.renderTiles = tempArray;
 }
 
+
+/**
+ Reorder renderTiles to start from middle
+ */
 void reorderFromMiddle() {
 	int midLeft = 0;
 	int midRight = 0;
@@ -143,6 +150,33 @@ void reorderFromMiddle() {
 	mainRenderer.renderTiles = tempArray;
 }
 
+
+/**
+ Reorder renderTiles to start from ends, towards the middle
+ */
+void reorderToMiddle() {
+	int left = 0;
+	int right = 0;
+	bool isRight = true;
+	
+	right = mainRenderer.tileCount - 1;
+	
+	struct renderTile *tempArray = (struct renderTile*)calloc(mainRenderer.tileCount, sizeof(struct renderTile));
+	
+	for (int i = 0; i < mainRenderer.tileCount; i++) {
+		if (isRight) {
+			tempArray[i] = mainRenderer.renderTiles[right--];
+			isRight = false;
+		} else {
+			tempArray[i] = mainRenderer.renderTiles[left++];
+			isRight = true;
+		}
+	}
+	
+	free(mainRenderer.renderTiles);
+	mainRenderer.renderTiles = tempArray;
+}
+
 /**
  Reorder renderTiles in given order
  
@@ -153,6 +187,11 @@ void reorderTiles(enum renderOrder order) {
 		case renderOrderFromMiddle:
 		{
 			reorderFromMiddle();
+		}
+			break;
+		case renderOrderToMiddle:
+		{
+			reorderToMiddle();
 		}
 			break;
 		case renderOrderTopToBottom:
@@ -174,367 +213,20 @@ void reorderTiles(enum renderOrder order) {
  @return A color object, with full color precision intact (double)
  */
 struct color getPixel(struct scene *worldScene, int x, int y) {
-	struct color output = {0.0f, 0.0f, 0.0f, 0.0f};
+	struct color output = {0.0, 0.0, 0.0, 0.0};
 	output.red =   mainRenderer.renderBuffer[(x + (worldScene->camera->height - y)*worldScene->camera->width)*3 + 0];
 	output.green = mainRenderer.renderBuffer[(x + (worldScene->camera->height - y)*worldScene->camera->width)*3 + 1];
 	output.blue =  mainRenderer.renderBuffer[(x + (worldScene->camera->height - y)*worldScene->camera->width)*3 + 2];
-	output.alpha = 1.0f;
+	output.alpha = 1.0;
 	return output;
 }
 
-/**
- Returns a random float between min and max
- 
- @param min Minimum value
- @param max Maximum value
- @return Random float between min and max
- */
-float getRandomFloat(float min, float max) {
-	return ((((float)rand()) / (float)RAND_MAX) * (max - min)) + min;
-}
-
 
 /**
- Returns a randomized position in a radius around a given point
- 
- @param center Center point for random distribution
- @param radius Maximum distance from center point
- @return Vector of a random position within a radius of center point
+ Compute view direction transforms
+
+ @param direction Direction vector to be transformed
  */
-struct vector getRandomVecOnRadius(struct vector center, float radius) {
-	return vectorWithPos(center.x + getRandomFloat(-radius, radius),
-						 center.y + getRandomFloat(-radius, radius),
-						 center.z + getRandomFloat(-radius, radius));
-}
-
-/**
- Returns a randomized position on a plane in a radius around a given point
- 
- @param center Center point for random distribution
- @param radius Maximum distance from center point
- @return Vector of a random position on a plane within a radius of center point
- */
-struct vector getRandomVecOnPlane(struct vector center, float radius) {
-	//FIXME: This only works in one orientation!
-	return vectorWithPos(center.x + getRandomFloat(-radius, radius),
-						 center.y + getRandomFloat(-radius, radius),
-						 center.z);
-}
-
-#pragma mark Renderer
-
-/*color rayTrace2(lightRay *incidentRay, world *worldScene) {
-	color output = {0.0f,0.0f,0.0f};
-	int bounces = 0;
-	double contrast = worldScene->camera->contrast;
-	vector hitpoint, hitpointNormal;
-	
-	do{
- // Find closest intersection
- double closestIntersection = 20000.0f;
- int currentSphere = -1;
- int currentPolygon = -1;
- int sphereAmount = worldScene->sphereAmount;
- int polygonAmount = fullPolyCount;
- int lightSourceAmount = worldScene->lightAmount;
- int objCount = worldScene->objCount;
- 
- material currentMaterial;
- vector polyNormal = {0.0, 0.0, 0.0};
- 
- //Sphere handling
- unsigned int i;
- for(i = 0; i < sphereAmount; i++){
- if(rayIntersectsWithSphere(incidentRay, &worldScene->spheres[i], &closestIntersection))
- currentSphere = i;
- }
- 
- //OBJ handling
- double fakeIntersection = 20000.0f;
- unsigned int o, p;
- for (o = 0; o < objCount; o++) {
- if (rayIntersectsWithSphere(incidentRay, &worldScene->objs[o].boundingVolume, &fakeIntersection)) {
- for (p = worldScene->objs[0].firstPolyIndex; p < (worldScene->objs[o].firstPolyIndex + worldScene->objs[0].polyCount); p++) {
- if (rayIntersectsWithPolygon(incidentRay, &polygonArray[p], &closestIntersection, &polyNormal)) {
- currentPolygon = p;
- currentSphere = -1;
- }
- }
- }
- }
- 
- if(currentSphere != -1) {
- vector scaled = vectorScale(closestIntersection, &incidentRay->direction);
- hitpoint = addVectors(&incidentRay->start, &scaled);
- 
- // Find the normal for this new vector at the point of intersection
- hitpointNormal = subtractVectors(&hitpoint, &worldScene->spheres[currentSphere].pos);
- float temp = scalarProduct(&hitpointNormal, &hitpointNormal);
- if(temp == 0) break;
- 
- temp = 1.0f / sqrtf(temp);
- hitpointNormal = vectorScale(temp, &hitpointNormal);
- 
- // Find the material to determine the colour
- currentMaterial = worldScene->materials[worldScene->spheres[currentSphere].material];
- } else if (currentPolygon != -1) {
- vector scaled = vectorScale(closestIntersection, &incidentRay->direction);
- hitpoint = addVectors(&incidentRay->start, &scaled);
- //FIXME: Get this from OBJ?
- hitpointNormal = polyNormal;
- float temp = scalarProduct(&hitpointNormal, &hitpointNormal);
- if (temp == 0) break;
- temp = 1.0f / sqrtf(temp);
- hitpointNormal = vectorScale(temp, &hitpointNormal);
- currentMaterial = worldScene->materials[polygonArray[currentPolygon].materialIndex];
- } else {
- //Ray missed everything, set to background.
- color temp = colorCoef(contrast, worldScene->ambientColor);
- output = addColors(&output, &temp);
- break;
- }
- 
- // Find the value of the light at this point
- unsigned int j;
- for(j=0; j < 3; j++){
- light currentLight = worldScene->lights[j];
- vector dist = subtractVectors(&currentLight.pos, &hitpoint);
- if(scalarProduct(&hitpointNormal, &dist) <= 0.0f) continue;
- double t = sqrtf(scalarProduct(&dist,&dist));
- if(t <= 0.0f) continue;
- 
- lightRay bouncedRay;
- bouncedRay.start = hitpoint;
- bouncedRay.direction = vectorScale((1/t), &dist);
- 
- // Calculate shadows
- bool inShadow = false;
- unsigned int k;
- for (k = 0; k < 3; ++k) {
- if (rayIntersectsWithSphere(&bouncedRay, &worldScene->spheres[k], &t)){
- inShadow = true;
- break;
- }
- }
- if (!inShadow){
- // Lambert diffusion
- float lambert = scalarProduct(&bouncedRay.direction, &hitpointNormal) * contrast;
- output.red += lambert * currentLight.intensity.red * currentMaterial.diffuse.red;
- output.green += lambert * currentLight.intensity.green * currentMaterial.diffuse.green;
- output.blue += lambert * currentLight.intensity.blue * currentMaterial.diffuse.blue;
- }
- }
- // Iterate over the reflection
- contrast *= currentMaterial.reflectivity;
- 
- // The reflected ray start and direction
- incidentRay->start = hitpoint;
- float reflect = 2.0f * scalarProduct(&incidentRay->direction, &hitpointNormal);
- vector tmp = vectorScale(reflect, &hitpointNormal);
- incidentRay->direction = subtractVectors(&incidentRay->direction, &tmp);
- 
- bounces++;
- 
-	} while((contrast > 0.0f) && (bounces < 15));
-	return output;
- }*/
-
-/**
- Returns a computed color based on a given ray and world scene
- 
- @param incidentRay View ray to be cast into a scene
- @param worldScene Scene the ray is cast into
- @return Color value with full precision (double)
- */
-struct color rayTrace(struct lightRay *incidentRay, struct scene *worldScene) {
-	//Raytrace a given light ray with a given scene, then return the color value for that ray
-	struct color output = {0.0f,0.0f,0.0f};
-	int bounces = 0;
-	double contrast = worldScene->camera->contrast;
-	
-	do {
-		//Find the closest intersection first
-		double closestIntersection = 20000.0f;
-		double temp;
-		int currentSphere = -1;
-		int currentPolygon = -1;
-		int sphereAmount = worldScene->sphereCount;
-		int lightSourceAmount = worldScene->lightCount;
-		int objCount = worldScene->objCount;
-		
-		struct material currentMaterial;
-		struct vector polyNormal = {0.0, 0.0, 0.0};
-		struct vector hitpoint, surfaceNormal;
-		
-		bool isCustomPoly = false;
-		
-		unsigned int i;
-		for (i = 0; i < sphereAmount; ++i) {
-			if (rayIntersectsWithSphere(incidentRay, &worldScene->spheres[i], &closestIntersection)) {
-				currentSphere = i;
-			}
-		}
-		
-		double fakeIntersection = 20000.0f;
-		unsigned int o, p;
-		for (o = 0; o < objCount; o++) {
-			if (rayIntersectsWithSphere(incidentRay, &worldScene->objs[o].boundingVolume, &fakeIntersection)) {
-				for (p = worldScene->objs[o].firstPolyIndex; p < (worldScene->objs[o].firstPolyIndex + worldScene->objs[o].polyCount); p++) {
-					if (rayIntersectsWithPolygon(incidentRay, &polygonArray[p], &closestIntersection, &polyNormal)) {
-						currentPolygon = p;
-						currentMaterial = *worldScene->objs[o].material;
-						currentSphere = -1;
-						isCustomPoly = false;
-					}
-				}
-			}
-		}
-		
-		//FIXME: TEMPORARY
-		for (i = 0; i < worldScene->customPolyCount; ++i) {
-			if (rayIntersectsWithPolygon(incidentRay, &worldScene->customPolys[i], &closestIntersection, &polyNormal)) {
-				currentPolygon = i;
-				currentSphere = -1;
-				isCustomPoly = true;
-			}
-		}
-		
-		//Ray-object intersection detection
-		if (currentSphere != -1) {
-			struct vector scaled = vectorScale(closestIntersection, &incidentRay->direction);
-			hitpoint = addVectors(&incidentRay->start, &scaled);
-			surfaceNormal = subtractVectors(&hitpoint, &worldScene->spheres[currentSphere].pos);
-			temp = scalarProduct(&surfaceNormal,&surfaceNormal);
-			if (temp == 0.0f) break;
-			temp = invsqrtf(temp);
-			surfaceNormal = vectorScale(temp, &surfaceNormal);
-			currentMaterial = worldScene->materials[worldScene->spheres[currentSphere].materialIndex];
-		} else if (currentPolygon != -1) {
-			struct vector scaled = vectorScale(closestIntersection, &incidentRay->direction);
-			hitpoint = addVectors(&incidentRay->start, &scaled);
-			//We get polyNormal from the intersection function
-			surfaceNormal = polyNormal;
-			temp = scalarProduct(&surfaceNormal,&surfaceNormal);
-			if (temp == 0.0f) break;
-			temp = invsqrtf(temp);
-			//FIXME: Possibly get existing normal here
-			surfaceNormal = vectorScale(temp, &surfaceNormal);
-			//FIXME: TEMPORARY
-			if (isCustomPoly) {
-				currentMaterial = worldScene->materials[worldScene->customPolys[currentPolygon].materialIndex];
-			}
-		} else {
-			//Ray didn't hit any object, set color to ambient
-			struct color temp = colorCoef(contrast, worldScene->ambientColor);
-			output = addColors(&output, &temp);
-			break;
-		}
-		
-		if (scalarProduct(&surfaceNormal, &incidentRay->direction) < 0.0f) {
-			surfaceNormal = vectorScale(1.0f, &surfaceNormal);
-		} else if (scalarProduct(&surfaceNormal, &incidentRay->direction) > 0.0f) {
-			surfaceNormal = vectorScale(-1.0f, &surfaceNormal);
-		}
-		
-		struct lightRay bouncedRay, cameraRay;
-		bouncedRay.start = hitpoint;
-		cameraRay.start = hitpoint;
-		cameraRay.direction = subtractVectors(&worldScene->camera->pos, &hitpoint);
-		double cameraProjection = scalarProduct(&cameraRay.direction, &hitpoint);
-		double cameraDistance = scalarProduct(&cameraRay.direction, &cameraRay.direction);
-		double camTemp = cameraDistance;
-		camTemp = invsqrtf(camTemp);
-		cameraRay.direction = vectorScale(camTemp, &cameraRay.direction);
-		cameraProjection = camTemp * cameraProjection;
-		//Find the value of the light at this point
-		unsigned int j;
-		for (j = 0; j < lightSourceAmount; ++j) {
-			struct light currentLight = worldScene->lights[j];
-			struct vector lightPos;
-			if (worldScene->camera->areaLights)
-				lightPos = getRandomVecOnRadius(currentLight.pos, currentLight.radius);
-			else
-				lightPos = currentLight.pos;
-			
-			bouncedRay.direction = subtractVectors(&lightPos, &hitpoint);
-			
-			double lightProjection = scalarProduct(&bouncedRay.direction, &surfaceNormal);
-			if (lightProjection <= 0.0f) continue;
-			
-			double lightDistance = scalarProduct(&bouncedRay.direction, &bouncedRay.direction);
-			double temp = lightDistance;
-			
-			if (temp <= 0.0f) continue;
-			temp = invsqrtf(temp);
-			bouncedRay.direction = vectorScale(temp, &bouncedRay.direction);
-			lightProjection = temp * lightProjection;
-			
-			//Calculate shadows
-			bool inShadow = false;
-			double t = lightDistance;
-			unsigned int k;
-			for (k = 0; k < sphereAmount; ++k) {
-				if (rayIntersectsWithSphere(&bouncedRay, &worldScene->spheres[k], &t)) {
-					inShadow = true;
-					break;
-				}
-			}
-			
-			
-			for (o = 0; o < objCount; o++) {
-				//Note, rayIntersectsWithSphereFast has to be used here since bounced rays may originate from within a boundingVolume
-				if (rayIntersectsWithSphereFast(&bouncedRay, &worldScene->objs[o].boundingVolume)) {
-					
-					if (worldScene->camera->aprxShadows) {
-						inShadow = true;
-						break;
-					} else {
-						for (p = worldScene->objs[o].firstPolyIndex; p < (worldScene->objs[o].firstPolyIndex + worldScene->objs[o].polyCount); p++) {
-							if (rayIntersectsWithPolygon(&bouncedRay, &polygonArray[p], &t, &polyNormal)) {
-								inShadow = true;
-								break;
-							}
-						}
-					}
-				}
-			}
-			
-			//FIXME: TEMPORARY
-			for (i = 0; i < worldScene->customPolyCount; ++i) {
-				if (rayIntersectsWithPolygon(&bouncedRay, &worldScene->customPolys[i], &t, &polyNormal)) {
-					inShadow = true;
-					break;
-				}
-			}
-			
-			if (!inShadow) {
-				//TODO: Calculate specular reflection
-				float specularFactor = 1.0;//scalarProduct(&cameraRay.direction, &surfaceNormal) * contrast;
-				
-				//Calculate Lambert diffusion
-				float diffuseFactor = scalarProduct(&bouncedRay.direction, &surfaceNormal) * contrast;
-				output.red += specularFactor * diffuseFactor * currentLight.intensity.red * currentMaterial.diffuse.red;
-				output.green += specularFactor * diffuseFactor * currentLight.intensity.green * currentMaterial.diffuse.green;
-				output.blue += specularFactor * diffuseFactor * currentLight.intensity.blue * currentMaterial.diffuse.blue;
-			}
-		}
-		//Iterate over the reflection
-		contrast *= currentMaterial.reflectivity;
-		
-		//Calculate reflected ray start and direction
-		double reflect = 2.0f * scalarProduct(&incidentRay->direction, &surfaceNormal);
-		incidentRay->start = hitpoint;
-		struct vector tempVec = vectorScale(reflect, &surfaceNormal);
-		incidentRay->direction = subtractVectors(&incidentRay->direction, &tempVec);
-		
-		bounces++;
-		
-	} while ((contrast > 0.0f) && (bounces <= worldScene->camera->bounces));
-	
-	return output;
-}
-
-//Compute view direction transforms
 void transformCameraView(struct vector *direction) {
 	for (int i = 1; i < mainRenderer.worldScene->camTransformCount; i++) {
 		transformVector(direction, &mainRenderer.worldScene->camTransforms[i]);
@@ -542,13 +234,26 @@ void transformCameraView(struct vector *direction) {
 	}
 }
 
+
+/**
+ Print running average duration of tiles rendered
+
+ @param avgTime Current computed average time
+ @param remainingTileCount Tiles remaining to render, to compute estimated remaining render time.
+ */
 void printRunningAverage(const time_t avgTime, int remainingTileCount) {
 	time_t remainingTime = remainingTileCount * avgTime;
 	//First print avg tile time
 	printf("Avg tile time is: %li min (%li sec)", avgTime / 60, avgTime);
-	printf(", render time remaining: %li min (%li sec)\n", remainingTime / 60, remainingTime);
+	printf(", render time remaining: %li min (%li sec)\r", remainingTime / 60, remainingTime);
 }
 
+
+/**
+ Compute the running average time from a given tile's render duration
+
+ @param tile Tile to get the duration from
+ */
 void computeTimeAverage(struct renderTile tile) {
 	mainRenderer.avgTileTime = mainRenderer.avgTileTime * (mainRenderer.timeSampleCount - 1);
 	mainRenderer.avgTileTime += difftime(tile.stop, tile.start);
@@ -570,56 +275,50 @@ DWORD WINAPI renderThread(LPVOID arg) {
 	void *renderThread(void *arg) {
 #endif
 		struct lightRay incidentRay;
-		int x,y;
-		bool first = true;
 		struct threadInfo *tinfo = (struct threadInfo*)arg;
 		
 		//First time setup for each thread
 		struct renderTile tile = getTile();
-		time(&tile.start);
 		
-		while (!renderTilesEmpty()) {
-			x = 0; y = 0;
+		while (tile.tileNum != -1) {
+			time(&tile.start);
 			
-			if (first) {
-				//This is the first round, don't stop a previous tile
-				first = false;
-			} else {
-				//Not first tile, deal with accordingly
-				//Stop current tile
-				mainRenderer.renderTiles[tile.tileNum].isRendering = false;
-				time(&tile.stop);
-				computeTimeAverage(tile);
-				
-				tile = getTile();
-				time(&tile.start);
-			}
-			
-			printf("Started tile %i/%i\r", mainRenderer.renderedTileCount, mainRenderer.tileCount);
+			printf("Started tile %i/%i\r", tile.tileNum, mainRenderer.tileCount);
 			while (tile.completedSamples < mainRenderer.worldScene->camera->sampleCount+1 && mainRenderer.isRendering) {
-				for (y = tile.endY; y > tile.startY; y--) {
-					for (x = tile.startX; x < tile.endX; x++) {
-						struct color output = getPixel(mainRenderer.worldScene, x, y);
-						struct color sample = {0.0f,0.0f,0.0f,0.0f};
+				for (int y = tile.endY; y > tile.startY; y--) {
+					for (int x = tile.startX; x < tile.endX; x++) {
 						
 						int height = mainRenderer.worldScene->camera->height;
 						int width = mainRenderer.worldScene->camera->width;
 						
-						double focalLength = 0.0f;
-						if (mainRenderer.worldScene->camera->FOV > 0.0f
-							&& mainRenderer.worldScene->camera->FOV < 189.0f) {
-							focalLength = 0.5f * mainRenderer.worldScene->camera->width / tanf((double)(PIOVER180) * 0.5f * mainRenderer.worldScene->camera->FOV);
+						double fracX = (double)x;
+						double fracY = (double)y;
+						
+						//A cheap 'antialiasing' of sorts. The more samples, the better this works
+						if (mainRenderer.worldScene->camera->antialiasing) {
+							fracX = getRandomDouble(fracX - 0.25, fracX + 0.25);
+							fracY = getRandomDouble(fracY - 0.25, fracY + 0.25);
 						}
 						
-						struct vector direction = {(x - 0.5f * mainRenderer.worldScene->camera->width) / focalLength,
-							(y - 0.5f * mainRenderer.worldScene->camera->height) / focalLength, 1.0f};
+						//Set up the light ray to be casted. direction is pointing towards the X,Y coordinate on the
+						//imaginary plane in front of the origin. startPos is just the camera position.
+						struct vector direction = {(fracX - 0.5 * mainRenderer.worldScene->camera->width)
+													/ mainRenderer.worldScene->camera->focalLength,
+												   (fracY - 0.5 * mainRenderer.worldScene->camera->height)
+													/ mainRenderer.worldScene->camera->focalLength,
+													1.0,
+													false};
 						
+						//Normalize direction
 						direction = normalizeVector(&direction);
 						struct vector startPos = mainRenderer.worldScene->camera->pos;
 						
-						//And now compute transforms for position
+						//This is my implementation of camera transforms. It's probably not the conventional
+						//way to do it, but it works quite well.
+						
+						//Compute transforms for position (place the camera in the scene)
 						transformVector(&startPos, &mainRenderer.worldScene->camTransforms[0]);
-						//...and compute rotation transforms for camera orientation
+						//...and compute rotation transforms for camera orientation (point the camera)
 						transformCameraView(&direction);
 						//Easy!
 						
@@ -627,8 +326,22 @@ DWORD WINAPI renderThread(LPVOID arg) {
 						incidentRay.start = startPos;
 						incidentRay.direction = direction;
 						incidentRay.rayType = rayTypeIncident;
-						//Get sample
-						sample = rayTrace(&incidentRay, mainRenderer.worldScene);
+						incidentRay.remainingInteractions = mainRenderer.worldScene->camera->bounces;
+						incidentRay.currentMedium.IOR = AIR_IOR;
+						
+						//For multi-sample rendering, we keep a running average of color values for each pixel
+						//The next block of code does this
+						
+						//Get previous color value from render buffer
+						struct color output = getPixel(mainRenderer.worldScene, x, y);
+						struct color sample = {0.0,0.0,0.0,0.0};
+						
+						//Get new sample (raytracing is initiated here)
+						if (mainRenderer.worldScene->camera->newRenderer) {
+							sample = newTrace(&incidentRay, mainRenderer.worldScene);
+						} else {
+							sample = rayTrace(&incidentRay, mainRenderer.worldScene);
+						}
 						
 						//And process the running average
 						output.red = output.red * (tile.completedSamples - 1);
@@ -647,16 +360,26 @@ DWORD WINAPI renderThread(LPVOID arg) {
 						mainRenderer.renderBuffer[(x + (height - y)*width)*3 + 2] = output.blue;
 						
 						//And store the image data
-						mainRenderer.worldScene->camera->imgData[(x + (height - y)*width)*3 + 0] = (unsigned char)min(  output.red*255.0f, 255.0f);
-						mainRenderer.worldScene->camera->imgData[(x + (height - y)*width)*3 + 1] = (unsigned char)min(output.green*255.0f, 255.0f);
-						mainRenderer.worldScene->camera->imgData[(x + (height - y)*width)*3 + 2] = (unsigned char)min( output.blue*255.0f, 255.0f);
+						//Note how imageData only stores 8-bit precision for each color channel.
+						//This is why we use the renderBuffer for the running average as it just contains
+						//the full precision color values
+						mainRenderer.worldScene->camera->imgData[(x + (height - y)*width)*3 + 0] =
+						(unsigned char)min(  output.red*255.0, 255.0);
+						mainRenderer.worldScene->camera->imgData[(x + (height - y)*width)*3 + 1] =
+						(unsigned char)min(output.green*255.0, 255.0);
+						mainRenderer.worldScene->camera->imgData[(x + (height - y)*width)*3 + 2] =
+						(unsigned char)min( output.blue*255.0, 255.0);
 					}
 				}
 				tile.completedSamples++;
 			}
-			
+			//Tile has finished rendering, get a new one and start rendering it.
+			mainRenderer.renderTiles[tile.tileNum].isRendering = false;
+			time(&tile.stop);
+			computeTimeAverage(tile);
+			tile = getTile();
 		}
-		mainRenderer.renderTiles[tile.tileNum].isRendering = false;
+		//No more tiles to render, exit thread. (render done)
 		printf("Thread %i done\n", tinfo->thread_num);
 		tinfo->threadComplete = true;
 #ifdef WINDOWS

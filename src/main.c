@@ -27,10 +27,33 @@
 int getFileSize(char *fileName);
 int getSysCores();
 void freeMem();
+void sleepNanosec(int ms);
 
 extern struct renderer mainRenderer;
 extern struct poly *polygonArray;
 
+void initRenderer(struct renderer *renderer) {
+	renderer->renderBuffer = NULL;
+	renderer->renderTiles = NULL;
+	renderer->tileCount = 0;
+	renderer->renderedTileCount = 0;
+	renderer->activeThreads = 0;
+	renderer->threadCount = getSysCores();
+	renderer->mode = saveModeNormal;
+	renderer->isRendering = false;
+	renderer->avgTileTime = (time_t)1;
+	renderer->timeSampleCount = 1;
+	
+	renderer->worldScene = (struct scene*)calloc(1, sizeof(struct scene));
+}
+
+/**
+ Main entry point
+
+ @param argc Argument count
+ @param argv Arguments
+ @return Error codes, 0 if exited normally
+ */
 int main(int argc, char *argv[]) {
 	
 	time_t start, stop;
@@ -42,19 +65,7 @@ int main(int argc, char *argv[]) {
 #endif
 	
 	//Initialize renderer
-	//FIXME: Put this in a function
-	mainRenderer.renderBuffer = NULL;
-	mainRenderer.renderTiles = NULL;
-	mainRenderer.tileCount = 0;
-	mainRenderer.renderedTileCount = 0;
-	mainRenderer.activeThreads = 0;
-	mainRenderer.threadCount = getSysCores();
-	mainRenderer.shouldSave = true;
-	mainRenderer.isRendering = false;
-	mainRenderer.avgTileTime = (time_t)1;
-	mainRenderer.timeSampleCount = 1;
-	
-	mainRenderer.worldScene = newScene();
+	initRenderer(&mainRenderer);
 	
 	char *fileName = NULL;
 	//Build the scene
@@ -64,8 +75,14 @@ int main(int argc, char *argv[]) {
 		logHandler(sceneParseErrorNoPath);
 	}
 	
+#ifndef UI_ENABLED
+	printf("**************************************************************************\n");
+	printf("*UI is DISABLED! Enable by uncommenting #define UI_ENABLED in includes.h!*\n");
+	printf("**************************************************************************\n");
+#endif
+	
 	//Build the scene
-	switch (testBuild(mainRenderer.worldScene, "test")) {
+	switch (testBuild(mainRenderer.worldScene, fileName)) {
 		case -1:
 			logHandler(sceneBuildFailed);
 			break;
@@ -204,6 +221,7 @@ int main(int argc, char *argv[]) {
 				mainRenderer.isRendering = false;
 			}
 		}
+		sleepNanosec(33);
 	}
 	
 	//Make sure render threads are finished before continuing
@@ -221,10 +239,22 @@ int main(int argc, char *argv[]) {
 	printDuration(difftime(stop, start));
 	
 	//Write to file
-	if (mainRenderer.shouldSave)
-		writeImage(mainRenderer.worldScene);
-	else
-		printf("Image won't be saved!\n");
+	
+	switch (mainRenderer.mode) {
+		case saveModeNormal:
+			writeImage(mainRenderer.worldScene->camera->filePath,
+					   mainRenderer.worldScene->camera->imgData,
+					   mainRenderer.worldScene->camera->fileType,
+					   mainRenderer.worldScene->camera->currentFrame,
+					   mainRenderer.worldScene->camera->width,
+					   mainRenderer.worldScene->camera->height);
+			break;
+		case saveModeNone:
+			printf("Image won't be saved!\n");
+			break;
+		default:
+			break;
+	}
 	
 	mainRenderer.worldScene->camera->currentFrame++;
 	
@@ -235,12 +265,16 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-#pragma mark Helper funcs
 
+/**
+ Free dynamically allocated memory
+ */
 void freeMem() {
 	//Free memory
 	if (mainRenderer.worldScene->camera->imgData)
 		free(mainRenderer.worldScene->camera->imgData);
+	if (mainRenderer.renderThreadInfo)
+		free(mainRenderer.renderThreadInfo);
 	if (mainRenderer.renderBuffer)
 		free(mainRenderer.renderBuffer);
 	if (mainRenderer.uiBuffer)
@@ -251,6 +285,10 @@ void freeMem() {
 		free(mainRenderer.worldScene->spheres);
 	if (mainRenderer.worldScene->materials)
 		free(mainRenderer.worldScene->materials);
+	if (mainRenderer.renderTiles)
+		free(mainRenderer.renderTiles);
+	if (mainRenderer.worldScene)
+		free(mainRenderer.worldScene);
 	if (vertexArray)
 		free(vertexArray);
 	if (normalArray)
@@ -261,6 +299,31 @@ void freeMem() {
 		free(polygonArray);
 }
 
+
+/**
+ Sleep for a given amount of milliseconds
+
+ @param ms Milliseconds to sleep for
+ */
+void sleepNanosec(int ms) {
+#ifdef WINDOWS
+	Sleep(ms);
+#elif MACOS
+	struct timespec ts;
+	ts.tv_sec = ms / 1000;
+	ts.tv_nsec = (ms % 1000) * 1000000;
+	nanosleep(&ts, NULL);
+#else
+	usleep(ms * 1000);
+#endif
+}
+
+
+/**
+ Get amount of logical processing cores on the system
+
+ @return Amount of logical processing cores
+ */
 int getSysCores() {
 #ifdef MACOS
 	int nm[2];
@@ -285,13 +348,4 @@ int getSysCores() {
 #else
 	return (int)sysconf(_SC_NPROCESSORS_ONLN);
 #endif
-}
-
-float randRange(float a, float b) {
-	return ((b-a)*((float)rand()/RAND_MAX))+a;
-}
-
-//FIXME: this may be a duplicate
-double rads(double angle) {
-	return PIOVER180 * angle;
 }

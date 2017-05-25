@@ -16,12 +16,14 @@ enum fileType {
 enum renderOrder {
 	renderOrderTopToBottom = 0,
 	renderOrderFromMiddle,
+	renderOrderToMiddle,
 	renderOrderNormal
 };
 
 struct camera {
 	int height, width; // Image dimensions
 	enum fileType fileType;
+	char *filePath;
 	
 	double FOV;
 	double focalLength;
@@ -30,23 +32,22 @@ struct camera {
 	
 	unsigned char *imgData;
 	bool areaLights;
-	bool aprxShadows;
+	bool antialiasing;
 	int sampleCount;
 	int threadCount;
 	enum renderOrder tileOrder;
 	int frameCount;
 	int currentFrame;
 	int bounces;
-	float contrast;
-	float windowScale;
+	double contrast;
+	double windowScale;
 	
 	bool isFullScreen;
 	bool isBorderless;
+	
+	bool newRenderer;
 	
 	bool useTiles;
 	int tileWidth;
 	int tileHeight;
 };
-
-//Calculate camera view plane
-void calculateUVW(struct camera *camera);

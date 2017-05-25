@@ -51,7 +51,7 @@ void fillTexture(SDL_Renderer *renderer, SDL_Texture *texture, int r, int g, int
 }
 
 int initSDL() {
-	float windowScale = mainRenderer.worldScene->camera->windowScale;
+	double windowScale = mainRenderer.worldScene->camera->windowScale;
 	
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -107,7 +107,7 @@ void getKeyboardInput() {
 	}
 	if (keys[SDL_SCANCODE_X]) {
 		printf("Aborting render without saving...\n");
-		mainRenderer.shouldSave = false;
+		mainRenderer.mode = saveModeNone;
 		mainRenderer.renderAborted = true;
 	}
 }
@@ -119,13 +119,13 @@ void drawPixel(int x, int y, bool on) {
 	
 	if (on) {
 		mainRenderer.uiBuffer[(x + (mainRenderer.worldScene->camera->height - y)
-							   * mainRenderer.worldScene->camera->width) * 4 + 3] = (unsigned char)min(frameColor.red*255.0f, 255.0f);
+							   * mainRenderer.worldScene->camera->width) * 4 + 3] = (unsigned char)min(frameColor.red*255.0, 255.0);
 		mainRenderer.uiBuffer[(x + (mainRenderer.worldScene->camera->height - y)
-							   * mainRenderer.worldScene->camera->width) * 4 + 2] = (unsigned char)min(frameColor.green*255.0f, 255.0f);
+							   * mainRenderer.worldScene->camera->width) * 4 + 2] = (unsigned char)min(frameColor.green*255.0, 255.0);
 		mainRenderer.uiBuffer[(x + (mainRenderer.worldScene->camera->height - y)
-							   * mainRenderer.worldScene->camera->width) * 4 + 1] = (unsigned char)min(frameColor.blue*255.0f, 255.0f);
+							   * mainRenderer.worldScene->camera->width) * 4 + 1] = (unsigned char)min(frameColor.blue*255.0, 255.0);
 		mainRenderer.uiBuffer[(x + (mainRenderer.worldScene->camera->height - y)
-							   * mainRenderer.worldScene->camera->width) * 4 + 0] = (unsigned char)min(255.0f, 255.0f);
+							   * mainRenderer.worldScene->camera->width) * 4 + 0] = (unsigned char)min(255.0, 255.0);
 	} else {
 		mainRenderer.uiBuffer[(x + (mainRenderer.worldScene->camera->height - y) * mainRenderer.worldScene->camera->width) * 4 + 0] = (unsigned char)0;
 		mainRenderer.uiBuffer[(x + (mainRenderer.worldScene->camera->height - y) * mainRenderer.worldScene->camera->width) * 4 + 1] = (unsigned char)0;
