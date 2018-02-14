@@ -14,7 +14,7 @@ ifeq ($(usesdl),no)
 endif
 
 CFLAGS = -std=c99 -Wall -D_DEFAULT_SOURCE
-CPROFILE= -pg --no-pie -fPIC
+CPROFILE= -g -pg --no-pie -fPIC
 LINKER = gcc -o
 LFLAGS = -I. -lm -pthread $(FRAMEWORKS)
 LPROFILE= -pg
