@@ -2,19 +2,24 @@ TARGET = c-ray
 TARGETPROFILE = c-ray-prof
 CC = gcc
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-	FRAMEWORKS = -lSDL2
-else
-	FRAMEWORKS = -I/usr/local/include -L/usr/local/lib -lSDL2
+ifdef USESDL2
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		FRAMEWORKS = -lSDL2
+	else
+		FRAMEWORKS = -I/usr/local/include -L/usr/local/lib -lSDL2
+	endif
+
+	ifeq ($(usesdl),no)
+		FRAMEWORKS = -I/usr/local/include
+	endif
 endif
 
-ifeq ($(usesdl),no)
-	FRAMEWORKS = -I/usr/local/include
+CFLAGS = -O2 -std=c99 -Wall -D_DEFAULT_SOURCE
+CPROFILE= -pg --no-pie -fPIC
+ifdef DEBUG
+	CFLAGS += -g
 endif
-
-CFLAGS = -std=c99 -Wall -D_DEFAULT_SOURCE
-CPROFILE= -g -pg --no-pie -fPIC
 LINKER = gcc -o
 LFLAGS = -I. -lm -pthread $(FRAMEWORKS)
 LPROFILE= -pg

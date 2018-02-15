@@ -300,3 +300,4 @@ cmake-build-debug/CMakeFiles/c_ray.dir/progress.make
 
 gmon.out
 perf.data*
+callgrind*
