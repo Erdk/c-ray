@@ -24,6 +24,16 @@ LINKER = gcc -o
 LFLAGS = -I. -lm -pthread $(FRAMEWORKS)
 LPROFILE= -pg
 
+ifdef LTTNG_SIMPLE
+	CFLAGS += -DLTTNG -DLTTNG_SIMPLE
+	LFLAGS += -llttng-ust -ldl
+endif
+
+ifdef LTTNG_MYTRACE
+	CFLAGS += -Isrc -DLTTNG -DLTTNG_MYTRACE
+	LFLAGS += -llttng-ust -ldl
+endif
+
 FRAMEWORK_PATH = /Library/Frameworks
 
 SRCDIR = src

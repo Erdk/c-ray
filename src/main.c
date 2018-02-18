@@ -47,7 +47,10 @@ void initRenderer(struct renderer *renderer) {
  @return Error codes, 0 if exited normally
  */
 int main(int argc, char *argv[]) {
-	
+#ifdef LTTNG
+  getchar();
+#endif
+
 	time_t start, stop;
 	
 	//Seed RNGs
