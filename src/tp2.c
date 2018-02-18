@@ -1,0 +1,8 @@
+#ifdef LTTNG_MULTITRACE
+
+#define TRACEPOINT_CREATE_PROBES
+#define TRACEPOINT_DEFINE
+
+#include "tp2.h"
+
+#endif /* LTTNG_MULTITRACE */

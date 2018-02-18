@@ -25,6 +25,10 @@
 #include "tp.h"
 #endif
 
+#ifdef LTTNG_MULTITRACE
+#include "tp2.h"
+#endif
+
 /**
  Traverse a k-d tree and see if a ray collides with a polygon.
 
@@ -36,6 +40,7 @@
 bool rayIntersectsWithNode(struct kdTreeNode *node, struct lightRay *ray, struct intersection *isect) {
 	//A bit of a hack, but it does work...!
 	double fakeIsect = 20000.0;
+
 #ifdef LTTNG_SIMPLE
   tracef("before rayIntersectWithAABB");
 #endif
@@ -45,29 +50,44 @@ bool rayIntersectsWithNode(struct kdTreeNode *node, struct lightRay *ray, struct
 	tracepoint(cray, my_first_tracepoint, tid, "before reyIntersectWithAABB");
 #endif
 
+#ifdef LTTNG_MULTITRACE
+	tracepoint(cray, intersect_aabb);
+#endif
+
 	if (rayIntersectWithAABB(node->bbox, ray, &fakeIsect)) {
 		bool hasHit = false;
 		if (node->left->polyCount > 0 || node->right->polyCount > 0) {
 			//Recurse down both sides
 			bool hitLeft  = rayIntersectsWithNode(node->left, ray, isect);
 			bool hitRight = rayIntersectsWithNode(node->right, ray, isect);
+
 #ifdef LTTNG_SIMPLE
 			tracef("after intersecting with nodes");
 #endif
 
 #ifdef LTTNG_MYTRACE
-	tracepoint(cray, my_first_tracepoint, tid, "after intersecting with nodes");
+			tracepoint(cray, my_first_tracepoint, tid, "after intersecting with nodes");
+#endif
+
+#ifdef LTTNG_MULTITRACE
+			tracepoint(cray, intersect_nodes);
 #endif
 			return hitLeft || hitRight;
 		} else {
 			//This is a leaf, so check all polys
+
 #ifdef LTTNG_SIMPLE
       tracef("rayIntersectsWithPolygon");
 #endif
 
 #ifdef LTTNG_MYTRACE
-	tracepoint(cray, my_first_tracepoint, tid, "rayIntersectsWithPolygon");
+			tracepoint(cray, my_first_tracepoint, tid, "rayIntersectsWithPolygon");
 #endif
+
+#ifdef LTTNG_MULTITRACE
+			tracepoint(cray, intersect_polygon);
+#endif
+
 			for (int i = 0; i < node->polyCount; i++) {
 				if (rayIntersectsWithPolygon(ray, &node->polygons[i], &isect->distance, &isect->surfaceNormal, &isect->uv)) {
 					hasHit = true;
