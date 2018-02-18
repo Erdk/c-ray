@@ -34,7 +34,7 @@ ifdef LTTNG_MYTRACE
 	LFLAGS += -llttng-ust -ldl
 endif
 
-ifdef LTTNG_MYTRACE
+ifdef LTTNG_MULTITRACE
 	CFLAGS += -Isrc -DLTTNG -DLTTNG_MULTITRACE
 	LFLAGS += -llttng-ust -ldl
 endif
